@@ -1,7 +1,7 @@
-import mongoose from "mongoose"
+import { Sequelize } from "sequelize"
 
 export const handleErrors = (error, res) => {
-  if (error instanceof mongoose.Error.ValidationError) {
+  if (error instanceof Sequelize.Error.ValidationError) {
     const validationErrors = Object.values(error.errors).map(err => err.message)
     return res
       .status(400)
