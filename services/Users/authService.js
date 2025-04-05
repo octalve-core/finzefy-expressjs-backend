@@ -1,116 +1,127 @@
 import { BAD_REQUEST, SUCCESS, VALIDATION_ERROR, NOT_FOUND, UNAUTHORIZED } from '../../constants/statusCode.js'
 import { User } from '../../schema/Users/authSchema.js'
-import { messageHandler, passwordValidator, hashPassword, verifyPassword, generateToken, sendEmail, verifyToken } from '../../utils/index.js'
+import { messageHandler, hashPassword, verifyPassword, generateToken, generateOTP, isOTPExpired } from '../../utils/index.js'
+import { sendEmail } from '../../modules/notifications/email.js'
+export const registerService = async ({data}, callback) => {
+  const { firstName, lastName, email, phoneNumber, password } = data
 
-
-export const  registerService = async ({data}, callback) => {
-    let { name, email, password, confirmPassword } = data
-
-    User.findOne({ email }).exec( async (err, user) => {
-      if(user){
-        return callback(messageHandler("Email already exists", false, BAD_REQUEST, {}))
-      }
-      else {
-       if(!passwordValidator(password)){
-        return callback(messageHandler("Password must contain at least one lowercase letter, one uppercase letter, one digit, one symbol (@#$%^&*!), and have a minimum length of 8 characters", false, VALIDATION_ERROR, {} ))
-       }
-
-       if(password !== confirmPassword){
-        return callback(messageHandler("Passwords do not match", false, VALIDATION_ERROR, {}))
-       }
-    
-       if(password) {
-        const hashedPassword = await hashPassword(password)
-        const user = new User({
-          name,
-          email,
-          password: hashedPassword
-        }) 
-        return await user.save((err, user) => {
-          if(err){
-            return callback(messageHandler("Failed to register", false, BAD_REQUEST, {}))
-          }
-          else {
-            return callback(messageHandler("User registered successfully", true, SUCCESS, user))
-          }
-        })
-       }
-       else {
-        return callback(messageHandler("Something went wrong...", false, BAD_REQUEST, err))
-       }
-  }
-})
-}
-
-
-export const loginService = ({data}, callback) => {
-  let {email, password} = data
-
-  User.findOne({email}).exec( async ( err, user) => {
-
-      if(err){
-          return callback(messageHandler("Something went wrong...", false, BAD_REQUEST, {}))
-      }
-      if(!user){
-        return callback(messageHandler("User not found!", false, NOT_FOUND))
-      }
-      const isPasswordValid = await verifyPassword(password, user.password)
-
-      if(isPasswordValid){
-        if(!user.isVerified) {
-          const confirmationToken = await generateToken({id: user._id, email: user.email}, '1d')
-          const verificationUrl = `${process.env.FRONTEND_URL}/confirm-email?token=${confirmationToken}`
-
-          const subject = 'Verify Your Email'
-          const text = 'Please comfirm your email address'
-          const template = 'emailConfirmation' 
-          const context = {
-            username: user.name,
-            verificationUrl: verificationUrl    
-          } 
-          
-          await sendEmail(
-            user.email,
-            subject,
-            text,
-            template,
-            context            
-          )
-          
-          return callback(messageHandler("Please confirm your email. A confirmation link has been sent", true, SUCCESS))
-        }
-        const token = generateToken({id: user._id, email: user.email})
-        return callback(messageHandler("User logged in successfully", true, SUCCESS, {user, token}))
-      }
-      else {
-      return callback(messageHandler("Invalid password", false, BAD_REQUEST))
+  try {
+    const existingUser = await User.findOne({ where: { email } })
+    if(existingUser) {
+      return callback(messageHandler("Email already exists", false, BAD_REQUEST, {}))
     }
- })
+
+    const existingPhone = await User.findOne({ where: { phoneNumber } })
+    if(existingPhone) {
+      return callback(messageHandler("Phone number already exists", false, BAD_REQUEST, {}))
+    }
+
+    const hashedPassword = await hashPassword(password)
+    const otp = generateOTP()
+    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
+
+    const user = await User.create({
+      firstName,
+      lastName,
+      email,
+      phoneNumber,
+      password: hashedPassword,
+      otp,
+      otpExpiry
+    })
+
+    const emailSent = await sendEmail({
+      to: email,
+      subject: "Email Verification",
+      text: `Your OTP is ${otp} and it will expire in 10 minutes`,
+      template: "emailVerification",
+      context: { 
+        otp,
+        name: `${firstName} ${lastName}`,
+        otpExpiry: otpExpiry.toLocaleString()
+      }
+    })
+
+    if (!emailSent) {
+      // If email fails, still return success but with a different message
+      return callback(messageHandler(
+        "Registration successful but verification email could not be sent. Please contact support.",
+        true,
+        SUCCESS,
+        { email: user.email }
+      ))
+    }
+
+    return callback(messageHandler(
+      "Registration successful. Please check your email for OTP verification.",
+      true,
+      SUCCESS,
+      { email: user.email }
+    ))
+  } catch (error) {
+    console.error('Registration error:', error);
+    return callback(messageHandler("Failed to register", false, BAD_REQUEST, {}))
+  }
 }
 
-
-export const verifyEmailService = async ({ token }, callback) => {
-  if (!token) {
-    return callback(messageHandler('Token is required', false, BAD_REQUEST))
-  }
-
-  const tokenVerification = verifyToken(token)
-
-  const { decoded } = tokenVerification
-  const user = await User.findOne({ email: decoded.email })
-
+export const verifyOTPService = async ({data}, callback) => {
+  const { email, otp } = data
+  try {
+    const user = await User.findOne({ where: { email } })
     if (!user) {
-      return callback(messageHandler('Invalid token', false, UNAUTHORIZED))
+      return callback(messageHandler("User not found", false, NOT_FOUND, {}))
     }
 
     if (user.isVerified) {
-      return callback(messageHandler('User is already verified', false, BAD_REQUEST))
+      return callback(messageHandler("Email already verified", false, BAD_REQUEST, {}))
+    }
+
+    if (isOTPExpired(user.otpExpiry)) {
+      return callback(messageHandler("OTP has expired", false, BAD_REQUEST, {}))
+    }
+
+    if (user.otp !== otp) {
+      return callback(messageHandler("Invalid OTP", false, BAD_REQUEST, {}))
     }
 
     user.isVerified = true
+    user.otp = null
+    user.otpExpiry = null
     await user.save()
 
-    return callback(messageHandler('Email verified successfully', true, SUCCESS))   
+    const token = generateToken({ id: user.id, email: user.email })
+    return callback(messageHandler("Email verified successfully", true, SUCCESS, { token, user }))
+  } catch (error) {
+    return callback(messageHandler("Verification failed", false, BAD_REQUEST, {}))
+  }
+}
+
+export const loginService = async ({data}, callback) => {
+  const {email, password} = data
+
+  try {
+    const user = await User.findOne({ where: { email } })
+    if (!user) {
+      return callback(messageHandler("User not found", false, NOT_FOUND, {}))
+    }
+
+    if (!user.isVerified) {
+      return callback(messageHandler("Please verify your email first", false, UNAUTHORIZED, {}))
+    }
+
+    const isPasswordValid = await verifyPassword(password, user.password)
+    if (!isPasswordValid) {
+      return callback(messageHandler("Invalid password", false, BAD_REQUEST, {}))
+    }
+
+    const token = generateToken({ id: user.id, email: user.email })
+    return callback(messageHandler("Login successful", true, SUCCESS, { 
+      user, 
+      token 
+    }))
+  } catch (error) {
+    return callback(messageHandler("Login failed", false, BAD_REQUEST, {}))
+  }
 }
 
 

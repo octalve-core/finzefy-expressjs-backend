@@ -173,3 +173,24 @@ export const sendEmail = async (to, subject, text, template, context) => {
     console.error('Error sending email:', error)
   }
 }
+
+export const generateOTP = () => {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+export const isOTPExpired = (expiryTime) => {
+  return new Date() > new Date(expiryTime);
+}
+
+// Update sendEmail function to include OTP template
+export const sendOTPEmail = async (to, otp, name) => {
+  const subject = 'Email Verification OTP'
+  const text = 'Please verify your email address'
+  const template = 'emailOTP'
+  const context = {
+    name: name,
+    otp: otp
+  }
+  
+  await sendEmail(to, subject, text, template, context)
+}

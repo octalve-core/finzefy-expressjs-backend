@@ -2,12 +2,21 @@ import { DataTypes } from "sequelize"
 import { sequelize } from "../../database/db.js"
 
 export const User = sequelize.define('User', {
-  name: {
+  firstName: {
     type: DataTypes.STRING,
     allowNull: false,
     validate: {
       notEmpty: {
-        msg: "Please provide your name."
+        msg: "Please provide your first name."
+      }
+    }
+  },
+  lastName: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    validate: {
+      notEmpty: {
+        msg: "Please provide your last name."
       }
     }
   },
@@ -21,18 +30,25 @@ export const User = sequelize.define('User', {
       }
     }
   },
+  phoneNumber: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    unique: true,
+    validate: {
+      notEmpty: {
+        msg: "Please provide your phone number."
+      }
+    }
+  },
   password: {
     type: DataTypes.STRING,
     allowNull: false,
     validate: {
       len: {
         args: [6],
-        msg: "Your password must not be less than 6 characters."
+        msg: "Password must be at least 6 characters long."
       }
     }
-  },
-  confirmPassword: {
-    type: DataTypes.STRING
   },
   isVerified: {
     type: DataTypes.BOOLEAN,
@@ -40,6 +56,14 @@ export const User = sequelize.define('User', {
   },
   verificationToken: {
     type: DataTypes.STRING
+  },
+  otp: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  otpExpiry: {
+    type: DataTypes.DATE,
+    allowNull: true
   },
   createdAt: {
     type: DataTypes.DATE,

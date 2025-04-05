@@ -22,7 +22,7 @@ app.use(express.urlencoded({extended: true}))
 
 // cors config
 const corsOptions = {
-  origin: ['http://localhost:3000', 'http://localhost:5173', 'https://docify-health.vercel.app', 'http://localhost:5174'],
+  origin: ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175'],
   optionsSuccessStatus: 200,
   credentials: true,  
 }

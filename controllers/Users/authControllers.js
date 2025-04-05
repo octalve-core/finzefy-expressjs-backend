@@ -1,4 +1,4 @@
-import { loginService, registerService, verifyEmailService } from '../../services/Users/authService.js'
+import { loginService, registerService, verifyOTPService } from '../../services/Users/authService.js'
 
 
 export const registerController = async (req, res) => {
@@ -7,15 +7,16 @@ export const registerController = async (req, res) => {
    })
 }
 
+export const verifyOTPController = async (req, res) => {
+  return await verifyOTPService({ data : req.body }, (result) => {
+    return res.status(result.statusCode).json({ result })
+  })
+}
+
 export const loginController = async (req, res) => {
   return await loginService({ data : req.body}, (result) => {
     return res.status(result.statusCode).json({ result })
   }) 
 }
 
-export const verifyEmailController = async (req, res) => {
-  const { token } = req.query
-  return await verifyEmailService({ token }, (result) => {
-    return res.status(result.statusCode).json({ result })
-  })
-}
+
