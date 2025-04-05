@@ -1,23 +1,33 @@
-# QUICKSERVE: Node.js & Express.js Starter Template
+# Finzefy Backend API
 
-QUICKSERVE is a robust and advanced starter template designed to jump-start your backend application development with Node.js and Express.js. It offers a clean and scalable structure following best practices in Node.js development, perfect for building RESTful APIs and web applications.
+A robust Express.js backend service for the Finzefy application, providing secure financial management and business operations APIs. This project was bootstrapped using [Quick-serve](https://github.com/kobiowuquadri/quick-serve) template.
 
 ## Features
-- **Environment Configuration**: Easily configurable environment variables with support for `.env` files.
-- **Security**: Helmet for securing HTTP headers and CORS configuration to handle cross-origin requests.
-- **Logging**: Integrated Morgan logging for debugging and tracking HTTP requests.
-- **Authentication**: JWT token generation and validation with password hashing and email verification.
-- **File Uploads**: Cloudinary integration for image storage, and Multer setup for handling file uploads.
-- **Email Services**: Setup for sending emails via Nodemailer with support for templated emails (Handlebars).
-- **Structured Folder Setup**: Organized directories for routes, models, controllers, middlewares, and utilities to maintain clean, modular code.
-- **Swagger Docs**: Built-in Swagger configuration for easy API documentation and testing.
-- **Database Connection**: MongoDB integration with Mongoose for seamless database interactions.
+- **Authentication & Authorization**: Secure JWT-based authentication with email verification
+- **Business Management**: Complete business profile management with digital signature support
+- **File Handling**: Cloudinary integration for secure file storage and management
+- **Database**: Sequelize ORM with support for multiple databases
+- **Security**: Implementation of security best practices including:
+  - JWT token validation
+  - Password hashing
+  - Request validation
+  - Protected routes
+- **Email Services**: Automated email notifications for verification and updates
+- **Currency Management**: Support for multiple currencies (NGN, USD, EUR, GBP)
 
-## Folder Structure
+## Tech Stack
+- Node.js
+- Express.js
+- Sequelize ORM
+- JWT for authentication
+- Cloudinary for file storage
+- Nodemailer for email services
+
+## Project Structure
 
 ```
-QUICKSERVE/
-│l
+finzefy/
+│
 ├── config/
 │   ├── swagger.js         # Swagger configuration for API documentation
 │
@@ -47,91 +57,122 @@ QUICKSERVE/
 ## Getting Started
 
 ### Prerequisites
-Before you begin, ensure you have the following installed:
-- [Node.js](https://nodejs.org/) (version 14 or higher)
-- [MongoDB](https://www.mongodb.com/try/download/community) or a cloud MongoDB provider (e.g., MongoDB Atlas)
+- Node.js (v14 or higher)
+- npm or yarn
+- MySQL/PostgreSQL database
+- Cloudinary account
+- Email service account
 
 ### Installation
 
-1. **Clone the repository:**
+1. **Clone the repository**
+```bash
+git clone https://github.com/FinzefyApp/finzefy-expressjs-backend.git
+cd finzefy-expressjs-backend
+```
 
-   ```bash
-   git clone https://github.com/kobiowuquadri/quicksserve.git
-   ```
+2. **Install dependencies**
+```bash
+npm install
+```
 
-2. **Install dependencies:**
+3. **Environment Setup**
 
-   Navigate into the project directory and run:
+Create a `.env` file in the root directory with the following variables:
+```env
+PORT=3000
+NODE_ENV=development
 
-   ```bash
-   cd quickserve
-   npm install
-   ```
+# Database
+DB_HOST=your_db_host
+DB_USER=your_db_user
+DB_PASS=your_db_password
+DB_NAME=your_db_name
 
-3. **Setup environment variables:**
+# JWT
+JWT_SECRET=your_jwt_secret
+JWT_EXPIRES_IN=24h
 
-   Create a `.env` file in the root of the project and configure the following environment variables:
+# Cloudinary
+CLOUDINARY_NAME=your_cloudinary_name
+CLOUDINARY_API_KEY=your_cloudinary_key
+CLOUDINARY_API_SECRET=your_cloudinary_secret
 
-   ```
-   PORT=3000
-   JWT_SECRET=your_jwt_secret
-   CLOUDINARY_NAME=your_cloudinary_name
-   CLOUDINARY_API_KEY=your_cloudinary_api_key
-   CLOUDINARY_API_SECRET=your_cloudinary_api_secret
-   NODEMAILER_MAIL=your_email@example.com
-   NODEMAILER_PASSWORD=your_email_password
-   FRONTEND_URL=http://localhost:3000
-   ```
+# Email
+SMTP_HOST=your_smtp_host
+SMTP_PORT=your_smtp_port
+SMTP_USER=your_smtp_user
+SMTP_PASS=your_smtp_password
+```
 
-   Ensure that your email provider supports the Nodemailer service for email functionality.
+4. **Start the server**
+```bash
+# Development
+npm run dev
 
-4. **Start the application:**
-
-   Run the development server:
-
-   ```bash
-   npm run dev
-   ```
-
-   Your app will be live at `http://localhost:3000` (or another port specified in your `.env` file).
-
-### Available Scripts
-
-- **Start the app in development mode**:  
-   `npm run dev`  
-   Starts the server with hot reloading enabled for development.
-
-- **Start the app in production mode**:  
-   `npm start`  
-   Starts the server in production mode.
-
-- **Run tests**:  
-   You can add testing libraries (e.g., Jest, Mocha) and run tests as needed.
+# Production
+npm start
+```
 
 ## API Documentation
 
-API endpoints are documented using Swagger. To view the documentation:
-1. Start the app using `npm run dev`
-2. Navigate to `http://localhost:3000/api-docs` to view and interact with the API.
+### Authentication Endpoints
+- `POST /api/v1/user/register` - Register new user
+- `POST /api/v1/user/verify-otp` - Verify email OTP
+- `POST /api/v1/user/login` - User login
+- `POST /api/v1/user/forgot-password` - Request password reset
+- `POST /api/v1/user/reset-password` - Reset password
+
+### Business Endpoints
+- `PUT /api/v1/business/update-info` - Update business information
+- `PUT /api/v1/business/update-currency` - Update primary currency
+
+### Request Examples
+
+**Update Business Information**
+```http
+PUT /api/v1/business/update-info
+Authorization: Bearer <your_token>
+Content-Type: multipart/form-data
+
+Form Data:
+- businessName: "Your Business Name"
+- businessAddress: "Business Address"
+- businessPhoneNumber: "+1234567890"
+- businessDescription: "Business Description"
+- digitalSignature: [File Upload]
+- websiteLink: "https://finzefy.com"
+- [other optional fields]
+```
+
+## Error Handling
+The API uses standard HTTP response codes:
+- `200` - Success
+- `400` - Bad Request
+- `401` - Unauthorized
+- `404` - Not Found
+- `500` - Server Error
 
 ## Contributing
-
-Feel free to contribute to this project by submitting pull requests to enhance its functionality. When submitting a PR, please ensure:
-- The code is well-documented
-- Tests are added for new features
-- The code follows the project’s style and guidelines
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
 ## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License
 
 ## Acknowledgments
+- [Quick-serve](https://github.com/kobiowuquadri/quick-serve) - The template used to bootstrap this project
+- **Express.js** - Web framework for building the server
+- **Sequelize** - ORM for database operations
+- **JWT** - For authentication and authorization
+- **Nodemailer** - For email functionality
+- **Cloudinary** - For file storage and handling
 
-- **Express.js**: Web framework used for building the server.
-- **MongoDB & Mongoose**: Database and ORM for storing data.
-- **JWT (JSON Web Tokens)**: Used for authentication and authorization.
-- **Nodemailer**: For email functionality.
-- **Cloudinary**: For image storage and handling.
+## Support
+For support, email [support@finzefy.com](mailto:support@finzefy.com)
 
 ---
 
