@@ -2,6 +2,7 @@ import { BAD_REQUEST, SUCCESS, VALIDATION_ERROR, NOT_FOUND, UNAUTHORIZED } from 
 import { User } from '../../schema/Users/authSchema.js'
 import { messageHandler, hashPassword, verifyPassword, generateToken, generateOTP, isOTPExpired } from '../../utils/index.js'
 import { sendEmail } from '../../modules/notifications/email.js'
+
 export const registerService = async ({data}, callback) => {
   const { firstName, lastName, email, phoneNumber, password } = data
 
@@ -121,6 +122,80 @@ export const loginService = async ({data}, callback) => {
     }))
   } catch (error) {
     return callback(messageHandler("Login failed", false, BAD_REQUEST, {}))
+  }
+}
+
+export const forgotPasswordService = async ({data}, callback) => {
+  const { email } = data
+
+  try {
+    const user = await User.findOne({ where: { email } })
+    if (!user) {
+      return callback(messageHandler("User not found", false, NOT_FOUND, {}))
+    }
+
+    const otp = generateOTP()
+    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
+
+    user.resetPasswordOtp = otp
+    user.resetPasswordOtpExpiry = otpExpiry
+    await user.save()
+
+    const emailSent = await sendEmail({
+      to: email,
+      subject: "Password Reset",
+      text: `Your password reset OTP is ${otp}`,
+      template: "resetPassword",
+      context: { 
+        otp,
+        name: `${user.firstName} ${user.lastName}`,
+        otpExpiry: otpExpiry.toLocaleString()
+      }
+    })
+
+    if (!emailSent) {
+      return callback(messageHandler("Failed to send reset instructions", false, BAD_REQUEST, {}))
+    }
+
+    return callback(messageHandler(
+      "Password reset instructions sent to your email",
+      true,
+      SUCCESS,
+      { email }
+    ))
+  } catch (error) {
+    console.error('Forgot password error:', error)
+    return callback(messageHandler("Failed to process request", false, BAD_REQUEST, {}))
+  }
+}
+
+export const resetPasswordService = async ({data}, callback) => {
+  const { email, otp, newPassword } = data
+
+  try {
+    const user = await User.findOne({ where: { email } })
+    if (!user) {
+      return callback(messageHandler("User not found", false, NOT_FOUND, {}))
+    }
+
+    if (!user.resetPasswordOtp || user.resetPasswordOtp !== otp) {
+      return callback(messageHandler("Invalid OTP", false, BAD_REQUEST, {}))
+    }
+
+    if (isOTPExpired(user.resetPasswordOtpExpiry)) {
+      return callback(messageHandler("OTP has expired", false, BAD_REQUEST, {}))
+    }
+
+    const hashedPassword = await hashPassword(newPassword)
+    user.password = hashedPassword
+    user.resetPasswordOtp = null
+    user.resetPasswordOtpExpiry = null
+    await user.save()
+
+    return callback(messageHandler("Password reset successful", true, SUCCESS, {}))
+  } catch (error) {
+    console.error('Reset password error:', error)
+    return callback(messageHandler("Failed to reset password", false, BAD_REQUEST, {}))
   }
 }
 
