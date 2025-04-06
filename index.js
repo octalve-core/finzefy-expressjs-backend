@@ -39,6 +39,10 @@ app.get('/', (req, res) => {
   res.json({success: true, message: 'Backend Connected Successfully'})
 })
 
+app.get('*', (req, res) => {
+  res.status(404).json({success: false, message: "Request not found."})
+})
+
 // error handler
 app.use(handleErrors)
 

@@ -181,16 +181,3 @@ export const generateOTP = () => {
 export const isOTPExpired = (expiryTime) => {
   return new Date() > new Date(expiryTime);
 }
-
-// Update sendEmail function to include OTP template
-export const sendOTPEmail = async (to, otp, name) => {
-  const subject = 'Email Verification OTP'
-  const text = 'Please verify your email address'
-  const template = 'emailOTP'
-  const context = {
-    name: name,
-    otp: otp
-  }
-  
-  await sendEmail(to, subject, text, template, context)
-}

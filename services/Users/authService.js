@@ -143,18 +143,22 @@ export const forgotPasswordService = async ({data}, callback) => {
 
     const emailSent = await sendEmail({
       to: email,
-      subject: "Password Reset",
-      text: `Your password reset OTP is ${otp}`,
-      template: "resetPassword",
-      context: { 
-        otp,
-        name: `${user.firstName} ${user.lastName}`,
+      subject: "Password Reset Request",
+      template: "forgotPassword",
+      context: {
+        name: user.firstName,
+        otp: otp,
         otpExpiry: otpExpiry.toLocaleString()
       }
     })
 
     if (!emailSent) {
-      return callback(messageHandler("Failed to send reset instructions", false, BAD_REQUEST, {}))
+      return callback(messageHandler(
+        "Failed to send reset instructions",
+        false,
+        BAD_REQUEST,
+        {}
+      ))
     }
 
     return callback(messageHandler(
@@ -165,7 +169,12 @@ export const forgotPasswordService = async ({data}, callback) => {
     ))
   } catch (error) {
     console.error('Forgot password error:', error)
-    return callback(messageHandler("Failed to process request", false, BAD_REQUEST, {}))
+    return callback(messageHandler(
+      "Failed to process request",
+      false,
+      BAD_REQUEST,
+      {}
+    ))
   }
 }
 
@@ -182,7 +191,7 @@ export const resetPasswordService = async ({data}, callback) => {
       return callback(messageHandler("Invalid OTP", false, BAD_REQUEST, {}))
     }
 
-    if (isOTPExpired(user.resetPasswordOtpExpiry)) {
+    if (new Date() > new Date(user.resetPasswordOtpExpiry)) {
       return callback(messageHandler("OTP has expired", false, BAD_REQUEST, {}))
     }
 
@@ -192,10 +201,20 @@ export const resetPasswordService = async ({data}, callback) => {
     user.resetPasswordOtpExpiry = null
     await user.save()
 
-    return callback(messageHandler("Password reset successful", true, SUCCESS, {}))
+    return callback(messageHandler(
+      "Password reset successful",
+      true,
+      SUCCESS,
+      {}
+    ))
   } catch (error) {
     console.error('Reset password error:', error)
-    return callback(messageHandler("Failed to reset password", false, BAD_REQUEST, {}))
+    return callback(messageHandler(
+      "Failed to reset password",
+      false,
+      BAD_REQUEST,
+      {}
+    ))
   }
 }
 

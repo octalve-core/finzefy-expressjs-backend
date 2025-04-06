@@ -93,3 +93,45 @@ export const loginValidation = {
         }
     }
 };
+
+export const forgotPasswordValidation = {
+    email: {
+        notEmpty: {
+            errorMessage: 'Email is required'
+        },
+        isEmail: {
+            errorMessage: 'Invalid email format'
+        },
+        trim: true
+    }
+};
+
+export const resetPasswordValidation = {
+    email: {
+        notEmpty: {
+            errorMessage: 'Email is required'
+        },
+        isEmail: {
+            errorMessage: 'Invalid email format'
+        },
+        trim: true
+    },
+    otp: {
+        notEmpty: {
+            errorMessage: 'OTP is required'
+        },
+        isLength: {
+            options: { min: 6, max: 6 },
+            errorMessage: 'OTP must be 6 digits'
+        }
+    },
+    newPassword: {
+        notEmpty: {
+            errorMessage: 'New password is required'
+        },
+        isLength: {
+            options: { min: 8 },
+            errorMessage: 'Password must be at least 8 characters long'
+        }
+    }
+};
